@@ -4,4 +4,4 @@ Apache HBase (standalone) for development and testing.
 
 ### Version
 
-- HBase: `1.4.9`
+- HBase: `2.2.0`

@@ -1,0 +1,23 @@
+version: '3.7'
+services:
+  zookeeper:
+    image: zookeeper:3.4.14
+    volumes:
+      - $PWD/zookeeper-data:/data
+      - $PWD/zookeeper-datalog:/datalog
+    expose:
+      - 2181
+  hbase:
+    image: cartermckinnon/hbase:2.2.0
+    build: .
+    depends_on:
+      - zookeeper
+    volumes:
+      - $PWD/hbase-data:/data
+      - $PWD/hbase-site.xml:/opt/hbase/conf/hbase-site.xml
+    ports:
+      - 16000:16000
+      - 16010:16010
+      - 16020:16020
+      - 16030:16030
+      - 3888:3888
