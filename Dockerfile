@@ -20,9 +20,8 @@ RUN wget http://archive.apache.org/dist/hbase/${VERSION}/hbase-${VERSION}-bin.ta
 ENV JAVA_HOME /usr/local/openjdk-8
 ENV PATH $PATH:/${DESTINATION}/bin
 
-# wait-for-it
-RUN wget https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh -O /wait-for-it.sh
-RUN chmod +x /wait-for-it.sh
+ADD configure-and-start-master.sh /configure-and-start-master.sh
+RUN chmod +x /configure-and-start-master.sh
 
 # REST API
 EXPOSE 8080
