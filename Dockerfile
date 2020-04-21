@@ -11,7 +11,7 @@ CMD ["/usr/bin/supervisord"]
 
 # hbase binaries
 ENV DESTINATION /opt/hbase
-ENV VERSION 2.2.0
+ENV VERSION 2.2.4
 RUN wget http://archive.apache.org/dist/hbase/${VERSION}/hbase-${VERSION}-bin.tar.gz && \
     tar -xf hbase-${VERSION}-bin.tar.gz && \
     mv /hbase-${VERSION} ${DESTINATION} && \
