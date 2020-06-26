@@ -1,0 +1,19 @@
+whitelistObjectNames: ["Hadoop:*"]
+lowercaseOutputName: true
+lowercaseOutputLabelNames: false
+rules:
+  - pattern: Hadoop<service=HBase, name=RegionServer, sub=Regions><>Namespace_([^\W_]+)_table_([^\W_]+)_region_([^\W_]+)_metric_(\w+)
+    name: hbase_regionserver_regions_$4
+    labels:
+      namespace: "$1"
+      table: "$2"
+      region: "$3"
+  - pattern: Hadoop<service=HBase, name=(\w+), sub=(\w+)><>Namespace_([^\W_]+)_table_([^\W_]+)_metric_(\w+)
+    name: hbase_$1_$2_$5
+    labels:
+      namespace: "$3"
+      table: "$4"
+  - pattern: Hadoop<service=HBase, name=(\w+), sub=(\w+)><>(\w+)
+    name: hbase_$1_$2_$3
+  - pattern: Hadoop<service=(\w+), name=(\w+), sub=(\w+)><>(\w+)
+    name: hadoop_$1_$2_$3_$4

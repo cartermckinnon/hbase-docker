@@ -1,14 +1,30 @@
+# A single-node HBase and Zookeeper cluster with persistent, local storage.
+# Prometheus metrics are exported from the Zookeeper server, HBase Master, and HBase Regionserver.
+# See port mappings for more details.
+
 version: '3.7'
 services:
+  
   zookeeper:
-    image: zookeeper:3.4.14
+    image: zookeeper:3.6.1
+    environment:
+      - ZOO_4LW_COMMANDS_WHITELIST=srvr,mntr,ruok
     volumes:
       - $PWD/zookeeper-data:/data
       - $PWD/zookeeper-datalog:/datalog
-    expose:
-      - 2181
+    ports:
+      - 2181:2181 # client API
+  
+  zookeeper-prometheus-expoerter:
+    image: dabealu/zookeeper-exporter
+    depends_on:
+      - zookeeper
+    ports:
+      - 2182:8080 # Prometheus exporter
+    command: --zk-list="zookeeper:2181" --timeout=5
+
   hbase:
-    image: cartermckinnon/hbase:2.2.0
+    image: cartermckinnon/hbase:2.2.5
     build: .
     depends_on:
       - zookeeper
@@ -16,8 +32,10 @@ services:
       - $PWD/hbase-data:/data
       - $PWD/hbase-site.xml:/opt/hbase/conf/hbase-site.xml
     ports:
-      - 16000:16000
-      - 16010:16010
-      - 16020:16020
-      - 16030:16030
-      - 3888:3888
+      - 8080:8080   # REST API
+      - 8081:8081   # Prometheus JMX exporter
+      - 9090:9090   # Thrift API
+      - 16000:16000 # Master API
+      - 16010:16010 # Master UI
+      - 16020:16020 # Regionserver API
+      - 16030:16030 # Regionserver UI
