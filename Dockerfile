@@ -1,4 +1,4 @@
-FROM openjdk:8-jre
+FROM adoptopenjdk:14-jre-hotspot
 
 RUN apt-get update && \
     apt-get -y install supervisor python-pip net-tools nano wget && \
@@ -11,6 +11,7 @@ CMD ["/usr/bin/supervisord"]
 
 # hbase binaries
 ENV DESTINATION /opt/hbase
+ENV PATH $PATH:/${DESTINATION}/bin
 ENV HBASE_VERSION 2.2.5
 RUN wget http://archive.apache.org/dist/hbase/${HBASE_VERSION}/hbase-${HBASE_VERSION}-bin.tar.gz && \
     tar -xf hbase-${HBASE_VERSION}-bin.tar.gz && \
@@ -22,11 +23,8 @@ ENV PROMETHEUS_JMX_VERSION 0.13.0
 RUN wget https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/${PROMETHEUS_JMX_VERSION}/jmx_prometheus_javaagent-${PROMETHEUS_JMX_VERSION}.jar && \
     mkdir ${DESTINATION}/prometheus && \
     mv /jmx_prometheus_javaagent-${PROMETHEUS_JMX_VERSION}.jar ${DESTINATION}/prometheus/agent.jar
-ADD prometheus-jmx-exporter.yaml /opt/hbase/prometheus/config.yaml
 RUN echo 'export HBASE_OPTS="$HBASE_OPTS -javaagent:/opt/hbase/prometheus/agent.jar=8081:/opt/hbase/prometheus/config.yaml"' >> /opt/hbase/conf/hbase-env.sh
-
-ENV JAVA_HOME /usr/local/openjdk-8
-ENV PATH $PATH:/${DESTINATION}/bin
+ADD prometheus-jmx-exporter.yaml /opt/hbase/prometheus/config.yaml
 
 ADD configure-and-start-master.sh /configure-and-start-master.sh
 RUN chmod +x /configure-and-start-master.sh
