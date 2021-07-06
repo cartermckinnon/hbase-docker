@@ -1,3 +1,5 @@
 hbase-data
 zookeeper-data
 zookeeper-datalog
+grafana-data
+prometheus-data

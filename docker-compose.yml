@@ -15,16 +15,19 @@ services:
     ports:
       - 2181:2181 # client API
   
-  zookeeper-prometheus-expoerter:
+  zookeeper-prometheus-exporter:
     image: dabealu/zookeeper-exporter
     depends_on:
       - zookeeper
+    expose:
+      - '8080'
     ports:
       - 2182:8080 # Prometheus exporter
     command: --zk-list="zookeeper:2181" --timeout=5
 
   hbase:
     image: cartermckinnon/hbase:2.2.5
+    hostname: hbase
     build: .
     depends_on:
       - zookeeper
@@ -39,3 +42,24 @@ services:
       - 16010:16010 # Master UI
       - 16020:16020 # Regionserver API
       - 16030:16030 # Regionserver UI
+
+  prometheus:
+    image: prom/prometheus
+    depends_on:
+      - zookeeper-prometheus-exporter
+      - hbase
+    volumes:
+      - $PWD/prometheus.yml:/etc/prometheus/prometheus.yml
+      - $PWD/prometheus-data/:/prometheus/
+    ports:
+      - 9091:9090 # Prometheus API/UI
+
+  grafana:
+    image: grafana/grafana
+    depends_on:
+      - prometheus
+    volumes:
+      - $PWD/grafana-data/lib/:/var/lib/grafana
+      - $PWD/grafana-data/log/:/var/log/grafana
+    ports:
+      - 3000:3000
