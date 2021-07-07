@@ -1,45 +1,74 @@
-FROM adoptopenjdk:14-jre-hotspot
+###
+# builder image
+###
+FROM adoptopenjdk:8-jdk-hotspot-focal AS builder
 
-RUN apt-get update && \
-    apt-get -y install supervisor python-pip net-tools nano wget && \
-    pip install supervisor-stdout
+RUN apt-get update && apt-get install -y git wget
 
-# supervisord
-RUN mkdir -p /var/log/supervisor
-ADD supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-CMD ["/usr/bin/supervisord"]
+###
+# install maven
+###
+ENV MAVEN_VERSION='3.6.3'
+ENV MAVEN_URL "https://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz"
+ENV MAVEN_SHA512 'c35a1803a6e70a126e80b2b3ae33eed961f83ed74d18fcd16909b2d44d7dada3203f1ffe726c17ef8dcca2dcaa9fca676987befeadc9b9f759967a8cb77181c0'
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+RUN curl --location --fail --silent --show-error --output /tmp/maven.tar.gz "${MAVEN_URL}" && \
+  echo "${MAVEN_SHA512} */tmp/maven.tar.gz" | sha512sum -c -
+RUN tar xzf /tmp/maven.tar.gz -C /opt && \
+  ln -s "/opt/$(dirname "$(tar -tf /tmp/maven.tar.gz | head -n1)")" /opt/maven && \
+  rm /tmp/maven.tar.gz
+ENV MAVEN_HOME '/opt/maven'
+ENV PATH "${MAVEN_HOME}/bin:${PATH}"
 
-# hbase binaries
-ENV DESTINATION /opt/hbase
-ENV PATH $PATH:/${DESTINATION}/bin
-ENV HBASE_VERSION 2.2.5
-RUN wget http://archive.apache.org/dist/hbase/${HBASE_VERSION}/hbase-${HBASE_VERSION}-bin.tar.gz && \
-    tar -xf hbase-${HBASE_VERSION}-bin.tar.gz && \
-    mv /hbase-${HBASE_VERSION} ${DESTINATION} && \
-    rm hbase-${HBASE_VERSION}-bin.tar.gz
+###
+# build hbase
+###
+WORKDIR /tmp
+ENV HBASE_VERSION 3.0.0-alpha-1RC0
+ENV HBASE_HOME /opt/hbase
+# clone from the github mirror because using apache's takes several times as long
+RUN git clone https://github.com/apache/hbase.git -b "${HBASE_VERSION}"
+RUN mvn clean install -DskipTests assembly:single -f ./hbase/pom.xml
+RUN mkdir -p /opt/hbase
+RUN find /tmp/hbase/hbase-assembly/target -iname '*.tar.gz' -not -iname '*client*' \
+  | head -n 1 \
+  | xargs -I{} tar xzf {} --strip-components 1 -C ${HBASE_HOME}
 
-# prometheus JMX exporter
-ENV PROMETHEUS_JMX_VERSION 0.13.0
+###
+# add prometheus jmx exporter
+###
+ENV PROMETHEUS_JMX_VERSION 0.16.0
 RUN wget https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/${PROMETHEUS_JMX_VERSION}/jmx_prometheus_javaagent-${PROMETHEUS_JMX_VERSION}.jar && \
-    mkdir ${DESTINATION}/prometheus && \
-    mv /jmx_prometheus_javaagent-${PROMETHEUS_JMX_VERSION}.jar ${DESTINATION}/prometheus/agent.jar
-RUN echo 'export HBASE_OPTS="$HBASE_OPTS -javaagent:/opt/hbase/prometheus/agent.jar=8081:/opt/hbase/prometheus/config.yaml"' >> /opt/hbase/conf/hbase-env.sh
-ADD prometheus-jmx-exporter.yaml /opt/hbase/prometheus/config.yaml
+    mkdir /opt/hbase/prometheus && \
+    mv jmx_prometheus_javaagent-${PROMETHEUS_JMX_VERSION}.jar ${HBASE_HOME}/prometheus/agent.jar
+RUN echo 'export HBASE_OPTS="$HBASE_OPTS -javaagent:${HBASE_HOME}/prometheus/agent.jar=8081:${HBASE_HOME}/prometheus/config.yaml"' >> ${HBASE_HOME}/conf/hbase-env.sh
+ADD prometheus-jmx-exporter.yaml ${HBASE_HOME}/prometheus/config.yaml
 
-ADD configure-and-start-master.sh /configure-and-start-master.sh
-RUN chmod +x /configure-and-start-master.sh
+###
+# final image
+###
+FROM adoptopenjdk:8-jre-hotspot-focal
+WORKDIR /
+ENV HBASE_HOME /opt/hbase
+ENV PATH "${HBASE_HOME}/bin:${PATH}"
+COPY --from=builder ${HBASE_HOME} ${HBASE_HOME}
+ADD configure-using-env.sh configure-using-env.sh
+RUN chmod +x configure-using-env.sh && \
+    echo "/configure-using-env.sh" >> ${HBASE_HOME}/bin/hbase-config.sh
+ENTRYPOINT ["hbase"]
+CMD ["master", "start"]
 
-# REST API
+# REST
 EXPOSE 8080
-# Prometheus JMX exporter
+# prometheus JMX exporter
 EXPOSE 8081
-# Thrift API
+# thrift
 EXPOSE 9090
-# Master port
+# master
 EXPOSE 16000
-# Master info port
+# Master UI
 EXPOSE 16010
-# Regionserver port
+# regionserver
 EXPOSE 16020
-# Regionserver info port
+# regionserver UI
 EXPOSE 16030

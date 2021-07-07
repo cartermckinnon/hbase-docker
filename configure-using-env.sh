@@ -29,5 +29,3 @@ function configure() {
 }
 
 configure /opt/hbase/conf/hbase-site.xml hbase HBASE_CONF
-
-hbase master start
