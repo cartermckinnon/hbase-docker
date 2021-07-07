@@ -1,0 +1,21 @@
+#!/bin/bash
+
+##
+# overrides the 'push' phase of Docker Hub automated builds
+##
+
+set -ex
+
+TAG_START=$(expr index "$IMAGE_NAME" :)
+REPO=${IMAGE_NAME:0:TAG_START-1}
+TAG=${IMAGE_NAME:TAG_START}
+
+# push whatever was just built
+docker push $REPO:$TAG
+
+# add 'latest' tag if this build wasn't a snapshot
+if ! [[ "$TAG" = 'latest-snapshot' ]]
+then
+    docker tag $REPO:$TAG $REPO:latest
+    docker push $REPO:latest
+fi
