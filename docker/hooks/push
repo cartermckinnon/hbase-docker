@@ -6,16 +6,12 @@
 
 set -ex
 
-TAG_START=$(expr index "$IMAGE_NAME" :)
-REPO=${IMAGE_NAME:0:TAG_START-1}
-TAG=${IMAGE_NAME:TAG_START}
-
 # push whatever was just built
-docker push $REPO:$TAG
+docker push $DOCKER_REPO:$DOCKER_TAG
 
-# add 'latest' tag if this build wasn't a snapshot
-if ! [[ "$TAG" = 'latest-snapshot' ]]
+# add 'latest' tag if this build wasn't the HBase HEAD
+if ! [[ "$DOCKER_TAG" = 'latest-snapshot' ]]
 then
-    docker tag $REPO:$TAG $REPO:latest
-    docker push $REPO:latest
+    docker tag $DOCKER_REPO:$DOCKER_TAG $DOCKER_REPO:latest
+    docker push $DOCKER_REPO:latest
 fi

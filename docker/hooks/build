@@ -1,0 +1,19 @@
+#!/bin/bash
+
+set -ex
+
+cd $(dirname $0)
+
+# if we're bulding the 'latest-snapshot' image tag, we need to build from the HBase repo's HEAD,
+# otherwise, the image tag is the same as a release tag on the HBase repo
+if [[ "$DOCKER_TAG" = "latest-snapshot" ]]
+then
+  HBASE_REF="master"
+else
+  HBASE_REF="$DOCKER_TAG"
+fi
+
+docker build ../.. \
+  --file $DOCKERFILE_PATH \
+  --tag $IMAGE_NAME \
+  --build-arg HBASE_REF="$HBASE_REF"
