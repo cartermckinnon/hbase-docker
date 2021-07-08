@@ -26,8 +26,7 @@ ENV PATH "${MAVEN_HOME}/bin:${PATH}"
 WORKDIR /tmp
 ARG HBASE_REF='master'
 ENV HBASE_HOME /opt/hbase
-# clone from the github mirror because using apache's takes several times as long
-RUN git clone https://github.com/apache/hbase.git --branch "${HBASE_REF}"
+RUN git clone https://github.com/apache/hbase.git --single-branch --depth 1 --branch "${HBASE_REF}"
 RUN mvn clean install -DskipTests assembly:single -f ./hbase/pom.xml
 RUN mkdir -p /opt/hbase
 RUN find /tmp/hbase/hbase-assembly/target -iname '*.tar.gz' -not -iname '*client*' \

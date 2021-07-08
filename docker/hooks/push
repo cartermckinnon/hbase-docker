@@ -9,8 +9,8 @@ set -ex
 # push whatever was just built
 docker push $DOCKER_REPO:$DOCKER_TAG
 
-# add 'latest' tag if this build wasn't the HBase HEAD
-if ! [[ "$DOCKER_TAG" = 'latest-snapshot' ]]
+# add 'latest' tag if this was a release version
+if [[ "$DOCKER_TAG" ~= '^[0-9.]+$' ]]
 then
     docker tag $DOCKER_REPO:$DOCKER_TAG $DOCKER_REPO:latest
     docker push $DOCKER_REPO:latest
