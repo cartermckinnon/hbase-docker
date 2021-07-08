@@ -27,21 +27,18 @@ WORKDIR /tmp
 ARG HBASE_REF='master'
 ENV HBASE_HOME /opt/hbase
 RUN git clone https://github.com/apache/hbase.git --single-branch --depth 1 --branch "${HBASE_REF}"
+
+# patch the in-process zookeeper to bind to all interfaces, otherwise we can't access it from outside the container
+# and will be forced to use an external zookeeper cluster (not ideal for testing)
+# at time of writing (July 7, 2021) this is the only way to change the bind of the in-process zookeeper
+RUN sed -i 's/InetAddress.getLoopbackAddress().getHostName()/"0.0.0.0"/g' \
+    ./hbase/hbase-zookeeper/src/main/java/org/apache/hadoop/hbase/zookeeper/MiniZooKeeperCluster.java
+
 RUN mvn clean install -DskipTests assembly:single -f ./hbase/pom.xml
 RUN mkdir -p /opt/hbase
 RUN find /tmp/hbase/hbase-assembly/target -iname '*.tar.gz' -not -iname '*client*' \
   | head -n 1 \
   | xargs -I{} tar xzf {} --strip-components 1 -C ${HBASE_HOME}
-
-###
-# add prometheus jmx exporter
-###
-ARG PROMETHEUS_JMX_VERSION='0.16.0'
-RUN wget https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/${PROMETHEUS_JMX_VERSION}/jmx_prometheus_javaagent-${PROMETHEUS_JMX_VERSION}.jar && \
-    mkdir /opt/hbase/prometheus && \
-    mv jmx_prometheus_javaagent-${PROMETHEUS_JMX_VERSION}.jar ${HBASE_HOME}/prometheus/agent.jar
-RUN echo 'export HBASE_OPTS="$HBASE_OPTS -javaagent:${HBASE_HOME}/prometheus/agent.jar=8081:${HBASE_HOME}/prometheus/config.yaml"' >> ${HBASE_HOME}/conf/hbase-env.sh
-ADD prometheus-jmx-exporter.yaml ${HBASE_HOME}/prometheus/config.yaml
 
 ###
 # final image
@@ -59,8 +56,6 @@ CMD ["master", "start"]
 
 # REST
 EXPOSE 8080
-# prometheus JMX exporter
-EXPOSE 8081
 # thrift
 EXPOSE 9090
 # master
