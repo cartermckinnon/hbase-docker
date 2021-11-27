@@ -34,7 +34,7 @@ RUN git clone https://github.com/apache/hbase.git --single-branch --depth 1 --br
 RUN sed -i 's/InetAddress.getLoopbackAddress().getHostName()/"0.0.0.0"/g' \
     ./hbase/hbase-zookeeper/src/main/java/org/apache/hadoop/hbase/zookeeper/MiniZooKeeperCluster.java
 
-RUN mvn clean install -DskipTests assembly:single -f ./hbase/pom.xml
+RUN mvn clean install -DskipTests --quiet assembly:single -f ./hbase/pom.xml
 RUN mkdir -p /opt/hbase
 RUN find /tmp/hbase/hbase-assembly/target -iname '*.tar.gz' -not -iname '*client*' \
   | head -n 1 \
