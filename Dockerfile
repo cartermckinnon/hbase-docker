@@ -1,16 +1,16 @@
 ###
 # builder image
 ###
-FROM adoptopenjdk:8-jdk-hotspot-focal AS builder
+FROM eclipse-temurin:8-jdk-focal AS builder
 
 RUN apt-get update && apt-get install -y git wget
 
 ###
 # install maven
 ###
-ARG MAVEN_VERSION='3.6.3'
+ARG MAVEN_VERSION='3.8.4'
 ENV MAVEN_URL "https://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz"
-ENV MAVEN_SHA512 'c35a1803a6e70a126e80b2b3ae33eed961f83ed74d18fcd16909b2d44d7dada3203f1ffe726c17ef8dcca2dcaa9fca676987befeadc9b9f759967a8cb77181c0'
+ENV MAVEN_SHA512 'a9b2d825eacf2e771ed5d6b0e01398589ac1bfa4171f36154d1b5787879605507802f699da6f7cfc80732a5282fd31b28e4cd6052338cbef0fa1358b48a5e3c8'
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN curl --location --fail --silent --show-error --output /tmp/maven.tar.gz "${MAVEN_URL}" && \
   echo "${MAVEN_SHA512} */tmp/maven.tar.gz" | sha512sum -c -
@@ -43,7 +43,7 @@ RUN find /tmp/hbase/hbase-assembly/target -iname '*.tar.gz' -not -iname '*client
 ###
 # final image
 ###
-FROM adoptopenjdk:8-jre-hotspot-focal
+FROM eclipse-temurin:8-jre-focal
 WORKDIR /
 ENV HBASE_HOME /opt/hbase
 ENV PATH "${HBASE_HOME}/bin:${PATH}"
