@@ -13,14 +13,14 @@ jobs:
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}  
-    - name: Extract container image tag from git tag
+    - name: Extract git tag (hbase ref) from full ref
       uses: olegtarasov/get-tag@v2.1
       id: tagName
-      with:
-        tagRegex: "rel/(.*)"
-        tagRegexGroup: 1  
+    - name: Extract container image tag from hbase ref
+      id: extractImageTag
+      run: echo "::set-output name=tag::${GIT_TAG_NAME#rel/}"
     - uses: actions/checkout@v3
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag mckdev/hbase:$GIT_TAG_NAME --tag mckdev/hbase:latest
+      run: docker build . --file Dockerfile --build-arg HBASE_REF=$GIT_TAG_NAME --tag mckdev/hbase:${steps.extractImageTag.outputs.tag} --tag mckdev/hbase:latest
     - name: Push the container image to Docker Hub
-      run: docker push mckdev/hbase:$GIT_TAG_NAME mckdev/hbase:latest
+      run: docker push mckdev/hbase:${steps.extractImageTag.outputs.tag} mckdev/hbase:latest
