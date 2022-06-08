@@ -2,6 +2,8 @@
 
 Apache HBase (standalone) for development and testing.
 
+The image is available from Docker Hub at `mckdev/hbase`.
+
 ### Image tags and HBase versions
 
 The version of HBase in the image is indicated by the image tag, which corresponds to the git tag of an HBase release.
