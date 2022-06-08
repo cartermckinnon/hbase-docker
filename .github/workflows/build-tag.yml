@@ -17,5 +17,7 @@ jobs:
     - uses: actions/checkout@v3
     - name: Build the Docker image
       run: docker build . --file Dockerfile --build-arg HBASE_REF=rel/$(cat VERSION) --tag mckdev/hbase:$(cat VERSION) --tag mckdev/hbase:latest
-    - name: Push the container image to Docker Hub
-      run: docker push mckdev/hbase:$(cat VERSION) mckdev/hbase:latest
+    - name: Push the container image to Docker Hub (version tag)
+      run: docker push mckdev/hbase:$(cat VERSION)
+    - name: Push the container image to Docker Hub (latest tag)
+      run: docker push mckdev/hbase:latest
