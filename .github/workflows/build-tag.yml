@@ -2,8 +2,8 @@ name: Docker Image CI
 
 on:
   push:
-    tags:
-    - '*'
+    branches:
+    - 'master'
 
 jobs:
   build:
@@ -13,15 +13,9 @@ jobs:
       uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}  
-    - name: Extract git tag (hbase ref) from full ref
-      uses: olegtarasov/get-tag@v2.1
-      id: tagName
-    - name: Extract container image tag from hbase ref
-      id: extractImageTag
-      run: echo "::set-output name=tag::${GIT_TAG_NAME#rel/}"
+        password: ${{ secrets.DOCKER_PASSWORD }}
     - uses: actions/checkout@v3
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --build-arg HBASE_REF=$GIT_TAG_NAME --tag mckdev/hbase:${steps.extractImageTag.outputs.tag} --tag mckdev/hbase:latest
+      run: docker build . --file Dockerfile --build-arg HBASE_REF=rel/$(cat VERSION) --tag mckdev/hbase:$(cat VERSION) --tag mckdev/hbase:latest
     - name: Push the container image to Docker Hub
-      run: docker push mckdev/hbase:${steps.extractImageTag.outputs.tag} mckdev/hbase:latest
+      run: docker push mckdev/hbase:$(cat VERSION) mckdev/hbase:latest
